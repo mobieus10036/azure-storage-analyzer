@@ -218,24 +218,37 @@ class MarkdownReporter:
             f.write("No storage accounts found.\n")
             return
         
-        f.write("| Storage Account | Location | SKU | Size | Containers | Shares | Security Score | Monthly Cost | Potential Savings |\n")
-        f.write("|----------------|----------|-----|------|------------|--------|----------------|--------------|-------------------|\n")
+        # Compact table with most important columns
+        f.write("| Account Name | Region | Size | Resources | Security | Monthly Cost |\n")
+        f.write("|--------------|--------|------|-----------|----------|-------------|\n")
         
         for account in accounts[:50]:  # Limit to first 50 for readability
             name = account.get('name', 'N/A')
             location = account.get('location', 'N/A')
-            sku = account.get('sku', 'N/A')
             size = format_bytes(account.get('size_bytes', 0))
             containers = account.get('container_count', 0)
             shares = account.get('share_count', 0)
             security_score = account.get('security_score', 0)
             monthly_cost = format_currency(account.get('monthly_cost', 0))
-            savings = format_currency(account.get('potential_savings', 0))
             
-            f.write(f"| {name} | {location} | {sku} | {size} | {containers} | {shares} | {security_score:.0f} | {monthly_cost} | {savings} |\n")
+            # Combine containers/shares into single column
+            resources = f"{containers}c/{shares}s" if containers or shares else "-"
+            
+            # Security score with emoji indicator
+            if security_score >= 80:
+                security_display = f"🟢 {security_score:.0f}"
+            elif security_score >= 60:
+                security_display = f"🟡 {security_score:.0f}"
+            else:
+                security_display = f"🔴 {security_score:.0f}"
+            
+            f.write(f"| {name} | {location} | {size} | {resources} | {security_display} | {monthly_cost} |\n")
         
         if len(accounts) > 50:
             f.write(f"\n*Showing 50 of {len(accounts)} storage accounts. See CSV report for complete list.*\n")
+        
+        # Add legend
+        f.write("\n*Resources: c=containers, s=shares | Security: 🟢 Good (80+), 🟡 Fair (60-79), 🔴 Needs Improvement (<60)*\n")
     
     def _get_severity_emoji(self, severity: str) -> str:
         """Get emoji for severity level."""
