@@ -168,6 +168,12 @@ python assess_storage.py --pdf-only
 # Quick PDF report (fastest option)
 python assess_storage.py --quick --pdf-only
 
+# Interactive account selection
+python assess_storage.py --interactive
+
+# Quick mode with interactive selection
+python assess_storage.py --quick --interactive
+
 # Test specific workload profile
 python assess_storage.py --workload heavy
 

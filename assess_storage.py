@@ -125,6 +125,13 @@ class StorageAssessment:
             logger.warning("No storage accounts found. Assessment complete.")
             return
         
+        # Interactive selection if enabled
+        if self.config.get('execution.interactive_selection', False):
+            storage_accounts = self._interactive_account_selection(storage_accounts)
+            if not storage_accounts:
+                logger.warning("No storage accounts selected. Assessment cancelled.")
+                return
+        
         # Process each storage account
         parallel_config = self.config.get('execution.parallel', {})
         use_parallel = parallel_config.get('enabled', True)
@@ -138,6 +145,137 @@ class StorageAssessment:
             self._process_sequential(storage_accounts)
         
         logger.info(f"Data collection complete. Processed {len(self.results['storage_accounts'])} storage accounts.")
+    
+    def _interactive_account_selection(self, storage_accounts):
+        """
+        Present interactive menu for storage account selection.
+        
+        Args:
+            storage_accounts: List of all discovered storage accounts
+            
+        Returns:
+            List of selected storage accounts
+        """
+        print("\n" + "=" * 80)
+        print("STORAGE ACCOUNT SELECTION")
+        print("=" * 80)
+        
+        # Display discovered accounts
+        print(f"\nDiscovered {len(storage_accounts)} storage account(s):\n")
+        for idx, account in enumerate(storage_accounts, 1):
+            sub_name = account.get('subscription_name', 'Unknown')[:40]
+            account_name = account.get('name', 'Unknown')
+            location = account.get('location', 'Unknown')
+            sku = account.get('sku', 'Unknown')
+            print(f"  {idx}. {account_name:<25} | {location:<15} | {sku:<20} | {sub_name}")
+        
+        print("\n" + "-" * 80)
+        print("Selection Options:")
+        print("  [A] Assess ALL storage accounts")
+        print("  [S] SELECT specific storage accounts")
+        print("  [Q] QUIT without assessment")
+        print("-" * 80)
+        
+        while True:
+            try:
+                choice = input("\nYour choice [A/S/Q]: ").strip().upper()
+                
+                if choice == 'A':
+                    print(f"\n✓ Selected ALL {len(storage_accounts)} storage accounts")
+                    return storage_accounts
+                
+                elif choice == 'S':
+                    return self._select_specific_accounts(storage_accounts)
+                
+                elif choice == 'Q':
+                    print("\n✗ Assessment cancelled by user")
+                    return []
+                
+                else:
+                    print("Invalid choice. Please enter A, S, or Q.")
+            
+            except (EOFError, KeyboardInterrupt):
+                print("\n\n✗ Assessment cancelled by user")
+                return []
+    
+    def _select_specific_accounts(self, storage_accounts):
+        """
+        Allow user to select specific storage accounts by number.
+        
+        Args:
+            storage_accounts: List of all storage accounts
+            
+        Returns:
+            List of selected storage accounts
+        """
+        print("\n" + "-" * 80)
+        print("Enter storage account numbers to assess (comma-separated)")
+        print("Examples: '1,3,5' or '1-3' or '1,2,5-7'")
+        print("-" * 80)
+        
+        while True:
+            try:
+                selection = input("\nAccount numbers: ").strip()
+                
+                if not selection:
+                    print("No selection made. Please try again.")
+                    continue
+                
+                # Parse selection
+                selected_indices = set()
+                parts = selection.split(',')
+                
+                for part in parts:
+                    part = part.strip()
+                    
+                    # Handle ranges (e.g., "1-3")
+                    if '-' in part:
+                        try:
+                            start, end = map(int, part.split('-'))
+                            if start < 1 or end > len(storage_accounts) or start > end:
+                                print(f"Invalid range: {part}")
+                                selected_indices.clear()
+                                break
+                            selected_indices.update(range(start, end + 1))
+                        except ValueError:
+                            print(f"Invalid range format: {part}")
+                            selected_indices.clear()
+                            break
+                    else:
+                        # Handle single numbers
+                        try:
+                            num = int(part)
+                            if num < 1 or num > len(storage_accounts):
+                                print(f"Invalid account number: {num} (must be 1-{len(storage_accounts)})")
+                                selected_indices.clear()
+                                break
+                            selected_indices.add(num)
+                        except ValueError:
+                            print(f"Invalid number: {part}")
+                            selected_indices.clear()
+                            break
+                
+                if not selected_indices:
+                    continue
+                
+                # Get selected accounts
+                selected_accounts = [storage_accounts[i-1] for i in sorted(selected_indices)]
+                
+                # Confirm selection
+                print(f"\n✓ Selected {len(selected_accounts)} storage account(s):")
+                for account in selected_accounts:
+                    print(f"  - {account.get('name', 'Unknown')}")
+                
+                confirm = input("\nProceed with these accounts? [Y/n]: ").strip().upper()
+                if confirm in ['', 'Y', 'YES']:
+                    return selected_accounts
+                else:
+                    print("Selection cancelled. Try again.")
+                    continue
+            
+            except (EOFError, KeyboardInterrupt):
+                print("\n\n✗ Selection cancelled by user")
+                return []
     
     def _process_sequential(self, storage_accounts):
         """Process storage accounts sequentially."""
@@ -616,6 +754,11 @@ Examples:
         help='Generate PDF report only (skip JSON/CSV)'
     )
     parser.add_argument(
+        '--interactive',
+        action='store_true',
+        help='Enable interactive storage account selection'
+    )
+    parser.add_argument(
         '--verbose',
         action='store_true',
         help='Enable verbose logging'
@@ -650,6 +793,10 @@ Examples:
         if args.pdf_only:
             logger.info("PDF-only mode enabled")
             config.set('output.formats', ['pdf'])
+        
+        if args.interactive:
+            logger.info("Interactive selection mode enabled")
+            config.set('execution.interactive_selection', True)
         
         if args.verbose:
             config.set('execution.verbose', True)
