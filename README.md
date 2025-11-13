@@ -143,8 +143,11 @@ export AZURE_CLIENT_SECRET="your-client-secret"
 ### Basic Usage
 
 ```bash
-# Run assessment on default subscription
+# Full assessment (all features, all report formats)
 python assess_storage.py
+
+# Quick assessment (9 seconds - skips detailed metrics)
+python assess_storage.py --quick
 
 # Run on specific subscription(s)
 python assess_storage.py --subscription "sub-id-1" --subscription "sub-id-2"
@@ -154,9 +157,25 @@ python assess_storage.py --output-dir ./reports
 
 # Enable verbose logging
 python assess_storage.py --verbose
+```
 
-# Quick mode (skip detailed blob analysis for faster results)
-python assess_storage.py --quick
+### Advanced Usage
+
+```bash
+# Generate PDF report only
+python assess_storage.py --pdf-only
+
+# Quick PDF report (fastest option)
+python assess_storage.py --quick --pdf-only
+
+# Test specific workload profile
+python assess_storage.py --workload heavy
+
+# Use scenario configuration
+python assess_storage.py --config scenarios/fslogix.yaml
+
+# Combine options for custom workflow
+python assess_storage.py --quick --subscription "Prod Sub" --output-dir ./monthly-review
 ```
 
 ### Configuration
