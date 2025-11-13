@@ -197,8 +197,10 @@ class MarkdownReporter:
         for i, rec in enumerate(recommendations[:10], 1):
             severity = rec.get('severity', 'info').upper()
             emoji = self._get_severity_emoji(rec.get('severity', 'info'))
+            storage_account = rec.get('storage_account', 'N/A')
             
             f.write(f"{i}. {emoji} **[{severity}]** {rec.get('title', 'No title')}\n")
+            f.write(f"   - **Storage Account:** `{storage_account}`\n")
             f.write(f"   - **Finding:** {rec.get('finding', 'N/A')}\n")
             f.write(f"   - **Impact:** {rec.get('impact', 'N/A')}\n")
             f.write(f"   - **Recommendation:** {rec.get('recommendation', 'N/A')}\n")
