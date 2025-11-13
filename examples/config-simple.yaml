@@ -1,0 +1,32 @@
+# ============================================================================
+# Simple Quick-Start Configuration
+# ============================================================================
+# Minimal settings for first-time users
+#
+# Usage: python assess_storage.py --config examples/config-simple.yaml
+#
+# This configuration uses auto-detection and sensible defaults.
+# For advanced options, see config.yaml in the root directory.
+
+# ============================================================================
+# COST ANALYSIS
+# ============================================================================
+cost_analysis:
+  enabled: true
+  workload_profile: "auto"  # Auto-detect FSLogix, AVD, etc.
+
+# ============================================================================
+# OUTPUT
+# ============================================================================
+output:
+  directory: "./reports"
+  formats:
+    - "pdf"   # Easy to share
+    - "csv"   # Easy to analyze in Excel
+
+# ============================================================================
+# EXECUTION
+# ============================================================================
+execution:
+  quick_mode: true  # Fast assessment
+  verbose: false

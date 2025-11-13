@@ -1,0 +1,35 @@
+# Azure Storage Assessment Toolkit - Dependencies
+
+# Core Azure SDK
+azure-identity>=1.15.0
+azure-mgmt-storage>=21.1.0
+azure-storage-blob>=12.19.0
+azure-storage-file-share>=12.14.0
+azure-mgmt-resource>=23.0.0
+azure-mgmt-monitor>=6.0.2
+azure-mgmt-subscription>=3.1.1
+
+# Cost Management (optional - for enhanced cost analysis)
+azure-mgmt-costmanagement>=4.0.0
+
+# Data processing and analysis
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Configuration
+pyyaml>=6.0
+
+# CLI and logging
+click>=8.1.0
+colorama>=0.4.6
+tabulate>=0.9.0
+tqdm>=4.66.0
+
+# Reporting
+jinja2>=3.1.0
+markdown>=3.5.0
+markdown2>=2.4.0
+reportlab>=4.0.0
+
+# Date/time handling
+python-dateutil>=2.8.0

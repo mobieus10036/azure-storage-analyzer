@@ -1,0 +1,109 @@
+# ============================================================================
+# FinOps Monthly Review Configuration
+# ============================================================================
+# Focus: Cost optimization, waste identification, tier recommendations
+# Use case: Monthly cost reviews, budget planning
+#
+# Usage: python assess_storage.py --config examples/scenarios/finops-review.yaml
+
+# ============================================================================
+# SCOPE
+# ============================================================================
+scope:
+  subscriptions: []  # Empty = all subscriptions
+  resource_groups: []
+  locations: []
+  required_tags: {}
+
+# ============================================================================
+# STALE DATA ANALYSIS
+# ============================================================================
+stale_data:
+  threshold_days: 90
+  check_last_access: true
+  sample_size: 10000
+  max_container_size: 1000000
+  max_files_to_scan: 5000
+  large_file_threshold_mb: 100
+
+# ============================================================================
+# COST OPTIMIZATION (PRIMARY FOCUS)
+# ============================================================================
+cost_analysis:
+  enabled: true
+  pricing_region: "eastus"
+  calculate_savings: true
+  workload_profile: "auto"  # Auto-detect FSLogix and other workloads
+  
+  tier_recommendations:
+    cool_tier_days: 30
+    archive_tier_days: 180
+    min_size_gb: 1
+
+# ============================================================================
+# SECURITY (MINIMAL - NOT THE FOCUS)
+# ============================================================================
+security:
+  check_public_access: true  # Quick check only
+  check_encryption: false
+  check_network_rules: false
+  check_auth_methods: false
+  check_soft_delete: false
+  check_versioning: false
+  check_defender: false
+  check_https_only: true
+  minimum_tls_version: "TLS1_2"
+
+# ============================================================================
+# GOVERNANCE (MINIMAL - NOT THE FOCUS)
+# ============================================================================
+governance:
+  required_tags: []
+  check_lifecycle_policies: true
+  check_diagnostics: false
+  check_resource_locks: false
+  naming_pattern: ""
+
+# ============================================================================
+# METRICS (DISABLED FOR SPEED)
+# ============================================================================
+metrics:
+  enabled: false
+
+# ============================================================================
+# OUTPUT & REPORTING
+# ============================================================================
+output:
+  directory: "./reports"
+  formats:
+    - "pdf"   # Executive summary
+    - "csv"   # For Excel analysis
+  include_details: true
+  include_recommendations: true
+  sanitize_output: false
+  compress: false
+
+# ============================================================================
+# EXECUTION (OPTIMIZED FOR SPEED)
+# ============================================================================
+execution:
+  quick_mode: true
+  parallel:
+    enabled: true
+    max_workers: 10
+  rate_limit: 10
+  retries:
+    max_attempts: 3
+    backoff_factor: 2
+  timeout: 30
+  verbose: false
+
+# ============================================================================
+# ADVANCED
+# ============================================================================
+advanced:
+  include_empty_accounts: true
+  detect_orphans: true
+  analyze_access_patterns: true
+  preview_features: false
+  custom_checks: []

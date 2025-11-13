@@ -1,0 +1,117 @@
+# ============================================================================
+# FSLogix / Azure Virtual Desktop (AVD) Optimization Configuration
+# ============================================================================
+# Focus: FSLogix profile performance and cost optimization
+# Use case: AVD environments, VDI deployments, user profile containers
+#
+# Usage: python assess_storage.py --config examples/scenarios/fslogix-optimization.yaml
+#
+# Notes:
+#   - Optimized for high-transaction workloads (FSLogix generates massive I/O)
+#   - Uses 'heavy' workload profile for accurate cost estimates
+#   - Focuses on file shares (FSLogix doesn't use blob storage)
+#   - Checks for proper network isolation and authentication
+
+# ============================================================================
+# SCOPE
+# ============================================================================
+scope:
+  subscriptions: []  # Empty = all subscriptions
+  resource_groups: []
+  locations: []
+  required_tags: {}
+
+# ============================================================================
+# STALE DATA ANALYSIS
+# ============================================================================
+stale_data:
+  threshold_days: 180  # Longer threshold - users may be inactive for months
+  check_last_access: true
+  sample_size: 5000
+  max_container_size: 1000000
+  max_files_to_scan: 10000  # FSLogix profiles have many small files
+  large_file_threshold_mb: 100
+
+# ============================================================================
+# COST OPTIMIZATION (FSLOGIX-FOCUSED)
+# ============================================================================
+cost_analysis:
+  enabled: true
+  pricing_region: "eastus"
+  calculate_savings: true
+  workload_profile: "heavy"  # FSLogix = very high transaction costs
+  
+  tier_recommendations:
+    cool_tier_days: 180  # Don't tier active user profiles
+    archive_tier_days: 365
+    min_size_gb: 1
+
+# ============================================================================
+# SECURITY (FSLOGIX-SPECIFIC CHECKS)
+# ============================================================================
+security:
+  check_public_access: true  # Should always be disabled for FSLogix
+  check_encryption: true
+  check_network_rules: true  # Should be restricted to VNet
+  check_auth_methods: true  # Should use AD/Kerberos, not shared keys
+  check_soft_delete: true
+  check_versioning: false
+  check_defender: true
+  check_https_only: true
+  minimum_tls_version: "TLS1_2"
+
+# ============================================================================
+# GOVERNANCE
+# ============================================================================
+governance:
+  required_tags:
+    - "Environment"
+    - "AVDHostPool"
+  check_lifecycle_policies: false  # Not recommended for FSLogix
+  check_diagnostics: true
+  check_resource_locks: false
+  naming_pattern: ""
+
+# ============================================================================
+# METRICS (DISABLED FOR SPEED)
+# ============================================================================
+metrics:
+  enabled: false
+
+# ============================================================================
+# OUTPUT & REPORTING
+# ============================================================================
+output:
+  directory: "./reports"
+  formats:
+    - "pdf"
+    - "csv"
+  include_details: true
+  include_recommendations: true
+  sanitize_output: false
+  compress: false
+
+# ============================================================================
+# EXECUTION (OPTIMIZED FOR FILE SHARES)
+# ============================================================================
+execution:
+  quick_mode: true
+  parallel:
+    enabled: true
+    max_workers: 10
+  rate_limit: 10
+  retries:
+    max_attempts: 3
+    backoff_factor: 2
+  timeout: 30
+  verbose: false
+
+# ============================================================================
+# ADVANCED
+# ============================================================================
+advanced:
+  include_empty_accounts: false  # Skip empty accounts
+  detect_orphans: false
+  analyze_access_patterns: true
+  preview_features: false
+  custom_checks: []
