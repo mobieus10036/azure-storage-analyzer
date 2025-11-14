@@ -41,12 +41,19 @@
 .PARAMETER Quick
     Run quick assessment (reduced depth, faster)
 
+.PARAMETER AllSubscriptions
+    Assess all enabled subscriptions (requires appropriate permissions)
+
 .PARAMETER Verbose
     Enable detailed logging
 
 .EXAMPLE
     .\Invoke-StorageAssessment.ps1
     Run full assessment with default settings
+
+.EXAMPLE
+    .\Invoke-StorageAssessment.ps1 -AllSubscriptions
+    Assess storage accounts across all enabled subscriptions
 
 .EXAMPLE
     .\Invoke-StorageAssessment.ps1 -GeneratePDF
@@ -84,7 +91,10 @@ param(
     [switch]$GeneratePDF,
     
     [Parameter(Mandatory = $false)]
-    [switch]$Quick
+    [switch]$Quick,
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$AllSubscriptions
 )
 
 #region Script Variables
@@ -2143,32 +2153,69 @@ try {
         Write-Status "Quick mode enabled - reduced assessment depth" -Type Info
     }
     
-    # Discover storage accounts
-    $storageAccounts = Get-TargetStorageAccounts
-    
-    if ($storageAccounts.Count -eq 0) {
-        Write-Status "No storage accounts to assess. Exiting." -Type Warning
-        exit 0
+    # Get subscriptions to assess
+    if ($AllSubscriptions) {
+        Write-Status "Multi-subscription mode - assessing all accessible subscriptions" -Type Info
+        $subscriptions = Get-AzSubscription | Where-Object { $_.State -eq 'Enabled' }
+        Write-Status "Found $($subscriptions.Count) enabled subscription(s)" -Type Success
+    }
+    else {
+        $subscriptions = @([PSCustomObject]@{
+            Id = $context.Subscription.Id
+            Name = $context.Subscription.Name
+        })
     }
     
-    # Run assessments
-    Write-Section "Running Assessments" -Color 'Cyan'
-    $Script:AssessmentResults.Summary.TotalAccounts = $storageAccounts.Count
+    # Process each subscription
+    foreach ($subscription in $subscriptions) {
+        if ($AllSubscriptions) {
+            Write-Host "`n" -NoNewline
+            Write-Section "Subscription: $($subscription.Name)" -Color 'Magenta'
+            Set-AzContext -SubscriptionId $subscription.Id -ErrorAction Stop | Out-Null
+            
+            # Update metadata for current subscription
+            $Script:AssessmentResults.Metadata.Subscription = @{
+                Id = $subscription.Id
+                Name = $subscription.Name
+                TenantId = $context.Tenant.Id
+            }
+        }
+        
+        # Discover storage accounts
+        $storageAccounts = Get-TargetStorageAccounts
+        
+        if ($storageAccounts.Count -eq 0) {
+            Write-Status "No storage accounts found in this subscription" -Type Warning
+            continue
+        }
+        
+        # Run assessments
+        if (-not $AllSubscriptions) {
+            Write-Section "Running Assessments" -Color 'Cyan'
+        }
+        $Script:AssessmentResults.Summary.TotalAccounts += $storageAccounts.Count
+        
+        $assessmentCounter = 0
+        foreach ($account in $storageAccounts) {
+            $assessmentCounter++
+            
+            $accountResult = Invoke-StorageAccountAssessment -StorageAccount $account -Config $config
+            $Script:AssessmentResults.StorageAccounts += $accountResult
+            
+            # Update summary
+            $Script:AssessmentResults.Summary.TotalFindings += $accountResult.Summary.Total
+            $Script:AssessmentResults.Summary.CriticalFindings += $accountResult.Summary.Critical
+            $Script:AssessmentResults.Summary.HighFindings += $accountResult.Summary.High
+            $Script:AssessmentResults.Summary.MediumFindings += $accountResult.Summary.Medium
+            $Script:AssessmentResults.Summary.LowFindings += $accountResult.Summary.Low
+            $Script:AssessmentResults.Summary.InfoFindings += $accountResult.Summary.Info
+        }
+    }
     
-    $assessmentCounter = 0
-    foreach ($account in $storageAccounts) {
-        $assessmentCounter++
-        
-        $accountResult = Invoke-StorageAccountAssessment -StorageAccount $account -Config $config
-        $Script:AssessmentResults.StorageAccounts += $accountResult
-        
-        # Update summary
-        $Script:AssessmentResults.Summary.TotalFindings += $accountResult.Summary.Total
-        $Script:AssessmentResults.Summary.CriticalFindings += $accountResult.Summary.Critical
-        $Script:AssessmentResults.Summary.HighFindings += $accountResult.Summary.High
-        $Script:AssessmentResults.Summary.MediumFindings += $accountResult.Summary.Medium
-        $Script:AssessmentResults.Summary.LowFindings += $accountResult.Summary.Low
-        $Script:AssessmentResults.Summary.InfoFindings += $accountResult.Summary.Info
+    # Check if any accounts were assessed
+    if ($Script:AssessmentResults.Summary.TotalAccounts -eq 0) {
+        Write-Status "No storage accounts to assess across all subscriptions. Exiting." -Type Warning
+        exit 0
     }
     
     # Generate reports
