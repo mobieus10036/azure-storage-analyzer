@@ -1,17 +1,59 @@
-# Azure Storage Assessment Toolkit
+# Azure Storage Best Practices Analyzer
 
-A Python tool for assessing Azure Storage Accounts. Built to help with cost optimization, security checks, and compliance reporting.
+A comprehensive **PowerShell-based** assessment tool for evaluating Azure Storage Accounts against enterprise security, governance, resiliency, and operational best practices.
 
-> **Note**: This is a learning project. I'm relatively new to Python development and relied heavily on GitHub Copilot, Azure documentation, and community examples to build this. Suggestions and improvements are welcome!
+**Built for Azure Cloud Architects and Platform Engineers**
 
-## What It Does
+🔗 **Repository:** [github.com/mobieus10036/azure-storage-analyzer](https://github.com/mobieus10036/azure-storage-analyzer)
 
-This toolkit analyzes your Azure Storage Accounts and generates reports that show:
+## Why PowerShell?
 
-- Cost estimates and potential savings
-- Security configuration issues
-- Compliance with basic Azure best practices
-- Stale data that could be moved to cheaper storage tiers
+This tool is built 100% in PowerShell because:
+- ✅ **Native Azure Integration** - Direct access to Azure PowerShell modules
+- ✅ **Zero Dependencies** - No Python, pip, or virtual environments needed
+- ✅ **Windows Native** - Already installed on Windows systems
+- ✅ **Enterprise Ready** - Perfect for automation and CI/CD pipelines
+- ✅ **Cross-Platform** - Works on Windows, Linux, and macOS with PowerShell 7+
+
+## Features
+
+### 1. Security Posture Assessment
+- Public access configurations and exposure risks
+- Private endpoint enforcement and network isolation
+- TLS version compliance
+- Shared Key Access vs Azure AD authentication
+- Local user access, SAS tokens, and stored access policies
+- Firewall rules and virtual network configurations
+- Encryption settings (Microsoft-managed vs customer-managed keys)
+- Soft delete, versioning, and immutable blob policies
+- Defender for Storage configuration and threat detection
+- Secure transfer enforcement
+- Access logging and monitoring posture
+
+### 2. Resiliency, DR & Data Protection
+- Replication configuration analysis (LRS, ZRS, GRS, RA-GRS, GZRS)
+- RPO/RTO alignment assessment
+- Backup posture for all storage services
+- Snapshot schedules and retention policies
+- Cross-region restore readiness
+- Geo-failover configuration validation
+
+### 3. Operational & Configuration Best Practices
+- Storage Account naming standards
+- Resource group organization
+- Tagging hygiene (environment, owner, data classification)
+- Diagnostic settings completeness
+- Managed identity usage patterns
+- Network security patterns
+- Principle of least privilege validation
+- Legacy configuration identification
+
+### 4. Data Lifecycle & Hygiene
+- Lifecycle management policy validation
+- Stale snapshot detection
+- Data retention compliance
+- Blob organization patterns
+- Ungoverned data growth indicators
 
 ## Quick Start
 
@@ -19,91 +61,192 @@ This toolkit analyzes your Azure Storage Accounts and generates reports that sho
 # Install dependencies
 pip install -r requirements.txt
 
-# Login to Azure
+# Login to Azure (requires appropriate RBAC permissions)
 az login
 
-# Run a quick assessment
-python assess_storage.py --quick --pdf-only
+# Run a comprehensive assessment
+python assess_storage.py
+
+# Generate PDF report only (faster)
+python assess_storage.py --pdf-only
 ```
 
-This will scan your storage accounts and create a PDF report in the `./reports/` folder.
+This will scan your storage accounts and create detailed reports in the `./reports/` folder.
 
 ## Basic Usage
 
 ```bash
-# Full assessment (takes longer, more detailed)
+# Full assessment with all analyzers
 python assess_storage.py
 
-# Quick mode (faster, less detail)
-python assess_storage.py --quick
-
-# Choose which accounts to assess
+# Interactive mode - select specific accounts
 python assess_storage.py --interactive
 
 # Specific subscription only
 python assess_storage.py --subscription "your-subscription-name"
+
+# Focus on specific resource groups
+python assess_storage.py --resource-group "rg-production"
 ```
 
-## What You Need
+## Required Permissions
 
-- Python 3.9 or newer
-- Azure CLI installed and logged in (`az login`)
-- Read permissions on your Azure Storage Accounts
+The assessment requires the following Azure RBAC roles:
 
-## Output
+- **Reader** on Storage Accounts (minimum)
+- **Storage Blob Data Reader** (for blob analysis)
+- **Monitoring Reader** (for metrics and diagnostics)
 
-The tool generates several report formats:
+Recommended for comprehensive assessment:
+- **Reader** at subscription level
+- **Security Reader** (for Defender for Storage insights)
 
-- **PDF** - Summary report (good for sharing with management)
-- **CSV** - Detailed data (good for Excel analysis)
-- **JSON** - Raw data (good for further processing)
-- **Markdown** - Text-based summary
+## Output Reports
 
-## Important Note on Cost Estimates
+The tool generates multiple report formats:
 
-The cost estimates are approximations. Actual costs depend on many factors:
+- **PDF** - Executive-level assessment with prioritized recommendations
+- **Markdown** - Detailed findings organized by category
+- **CSV** - Granular data for filtering and analysis
+- **JSON** - Complete assessment data for automation
 
-- Your specific Azure region
-- How much you access your data (transactions)
-- Data transfer amounts
-- Special features you're using
+### Report Structure
 
-For Azure Files, transaction costs can vary a lot:
-- Basic file storage: ~$0.10/GB/month
-- Regular file shares: ~$0.20/GB/month
-- FSLogix/AVD profiles: ~$0.48/GB/month (lots of transactions)
+Each report includes:
 
-Always check your actual bills in Azure Cost Management.
+1. **Executive Summary** - Key risks, strengths, and highest-priority remediations
+2. **Storage Account Inventory** - Each account with summarized posture
+3. **Detailed Findings** - Organized by category with risk ratings
+4. **Recommended Remediations** - Clear, actionable, prioritized steps
+5. **Policy & Governance Recommendations** - Tenant-wide enforcement guidance
+6. **Hardening Checklist** - Engineer-ready implementation steps
 
 ## Configuration
 
-You can customize the assessment in `config.yaml`:
+Customize the assessment scope and depth in `config.yaml`:
 
 ```yaml
-# How many days before data is considered "stale"
-stale_days: 90
+security:
+  # Enable comprehensive security checks
+  check_public_access: true
+  check_private_endpoints: true
+  check_defender_for_storage: true
+  check_encryption: true
+  check_network_rules: true
 
-# Workload type (affects cost estimates)
-cost_analysis:
-  workload_profile: "moderate"  # Options: light, moderate, heavy
+resiliency:
+  # Validate DR and backup configurations
+  check_replication: true
+  check_backup_policies: true
+  minimum_retention_days: 30
 ```
 
 ## Project Structure
 
 ```
 az-storage-assessment/
-├── assess_storage.py       # Main script
-├── config.yaml            # Settings
-├── requirements.txt       # Python packages needed
+├── assess_storage.py       # Main orchestration script
+├── config.yaml            # Assessment configuration
+├── requirements.txt       # Python dependencies
 ├── src/
-│   ├── collectors/        # Gets data from Azure
-│   ├── analyzers/         # Analyzes the data
-│   ├── reporters/         # Creates reports
-│   └── utils/             # Helper functions
-└── reports/               # Where reports are saved
+│   ├── collectors/        # Azure data collection modules
+│   ├── analyzers/         # Best practice analysis engines
+│   ├── reporters/         # Report generation (PDF, CSV, JSON, Markdown)
+│   └── utils/             # Helper functions and utilities
+├── reports/               # Generated assessment reports
+└── examples/              # Sample configurations and scenarios
 ```
 
-## Limitations
+## Assessment Categories
+
+### Security Analysis
+- Network exposure and public access risks
+- Authentication method evaluation (Shared Key vs Azure AD)
+- Encryption configuration (at-rest and in-transit)
+- Private endpoint implementation
+- Defender for Storage threat detection
+- Access control and RBAC alignment
+- Diagnostic logging completeness
+
+### Resiliency & DR Analysis
+- Replication strategy validation
+- Geo-redundancy configuration
+- Backup and snapshot policies
+- Soft delete and versioning
+- Immutable storage configurations
+- Recovery time/point objectives assessment
+
+### Operational Best Practices
+- Naming conventions adherence
+- Tagging standards compliance
+- Resource organization patterns
+- Managed identity usage
+- Diagnostic settings configuration
+- Legacy feature identification
+
+### Data Lifecycle & Governance
+- Lifecycle management policies
+- Data retention compliance
+- Stale data identification
+- Blob versioning hygiene
+- Snapshot management
+
+## Example Scenarios
+
+Pre-configured assessment profiles are available in `examples/scenarios/`:
+
+- `security-audit.yaml` - Focus on security posture
+- `fslogix-optimization.yaml` - AVD/FSLogix specific checks
+- `finops-review.yaml` - Cost optimization focus (legacy)
+
+## Risk Rating System
+
+Findings are rated using a standardized severity scale:
+
+- **Critical** - Immediate security risk or compliance violation
+- **High** - Significant misconfiguration requiring prompt attention
+- **Medium** - Best practice deviation with moderate impact
+- **Low** - Minor optimization or hygiene improvement
+- **Info** - Informational finding or recommendation
+
+## Architecture Recommendations
+
+The tool provides opinionated, architecture-quality guidance including:
+
+- **Hardening strategies** for each storage account
+- **Network isolation** patterns and enforcement
+- **Zero trust** security model implementation
+- **Tenant-wide governance** controls
+- **Monitoring and auditability** frameworks
+- **Compliance alignment** roadmaps
+
+## Contributing
+
+This is a professional-grade assessment tool. Contributions should maintain:
+
+- Enterprise architecture quality standards
+- Comprehensive error handling
+- Detailed logging
+- Clear documentation
+- Azure best practices alignment
+
+See `CONTRIBUTING.md` for guidelines.
+
+## Support & Resources
+
+- **Documentation**: See `docs/` folder for detailed guides
+- **Azure Storage Best Practices**: https://learn.microsoft.com/azure/storage/
+- **Azure Well-Architected Framework**: https://learn.microsoft.com/azure/well-architected/
+
+## License
+
+MIT License - See `LICENSE` file for details.
+
+---
+
+**Designed for Azure Cloud Architects and Platform Engineers**
+
+This tool is built to provide deep, actionable insights for hardening Azure Storage infrastructure at enterprise scale.
 
 - Only reads data, doesn't make any changes to Azure
 - Doesn't access actual blob contents (just metadata)
