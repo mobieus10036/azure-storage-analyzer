@@ -45,6 +45,7 @@ htmlcov/
 reports/*.csv
 reports/*.json
 reports/*.pdf
+reports/*.html
 reports/*.md
 !reports/README.md
 *.csv
